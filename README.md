@@ -1,36 +1,164 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# OpenClaw Cockpit
+
+Web-based management cockpit for [OpenClaw](https://github.com/lynnlni/openclaw) AI agent instances. Deploy, configure, and monitor your AI agents across multiple remote servers from a single interface.
+
+## Features
+
+### Machine Management
+
+Register and manage remote servers via SSH. Supports both password and private key authentication. Credentials are encrypted locally with AES-256-GCM.
+
+### Deployment
+
+Guided deployment wizard that handles the full lifecycle:
+
+- Environment detection (OS, architecture, Node.js, package manager)
+- Automated Node.js + OpenClaw installation
+- Workspace initialization
+- Service start / stop / restart / upgrade
+- Real-time deployment logs
+
+### Skills
+
+Discover, install, and manage AI skills:
+
+- Browse installed skills with enable/disable toggle
+- Discover new skills from configurable GitHub repositories
+- One-click install from remote repos
+- Create and edit custom skills locally
+- Manage skill source repositories
+
+### MCP Servers
+
+Configure [Model Context Protocol](https://modelcontextprotocol.io) servers:
+
+- Support for stdio, HTTP, and SSE transports
+- Environment variable and argument configuration
+- Per-server enable/disable control
+
+### Providers
+
+Manage LLM providers and API keys:
+
+- Multi-provider support (OpenAI, Anthropic, local LLMs, custom endpoints)
+- Model defaults and fallback chain configuration
+- Secure API key storage
+
+### Channels
+
+Configure communication channels for your AI agents. Add, edit, enable/disable channels with per-channel settings.
+
+### Backup & Recovery
+
+- Create and restore full snapshots
+- Export / import configuration archives
+- Clone configurations across machines
+- Safety snapshots before restore operations
+
+### Workspace Editor
+
+Edit all workspace configuration files through a browser-based CodeMirror editor:
+
+| File | Purpose |
+|------|---------|
+| `openclaw.json` | Core configuration (JSON editor) |
+| `IDENTITY.md` | AI identity and characteristics |
+| `AGENTS.md` | Agent behavior rules |
+| `TOOLS.md` | Tool usage guidelines |
+| `SOUL.md` | Personality and communication style |
+| `MEMORY.md` | Memory structure documentation |
+| `USER.md` | User profile and preferences |
+| `BOOTSTRAP.md` | Startup procedure |
+| `HEARTBEAT.md` | Scheduled tasks and intervals |
+
+### Memory
+
+Browse and edit workspace markdown files with a resizable two-panel layout. Includes a daily memory view organized by date.
+
+### Dashboard
+
+Real-time overview of all registered machines showing connectivity, installation status, service state, and version information.
+
+## Tech Stack
+
+- **Framework**: Next.js 16 (App Router), React 19, TypeScript
+- **UI**: shadcn/ui, Radix UI, Tailwind CSS 4
+- **Editor**: CodeMirror (JSON + Markdown)
+- **Data Fetching**: SWR
+- **Validation**: Zod
+- **SSH**: node-ssh
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) and add your first machine.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+## Configuration
 
-To learn more about Next.js, take a look at the following resources:
+### Environment Variables
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `ENCRYPTION_KEY` | Master key for encrypting stored credentials | Built-in default key |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Local Data
 
-## Deploy on Vercel
+Machine configurations are stored at `~/.openclaw-cockpit/machines.json`. Passwords are encrypted at rest. No credentials are sent to the browser.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Quick Start Guide
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Start the cockpit and go to **Machines** - add your remote server
+2. Go to **Deploy** - install OpenClaw on the server
+3. Configure **Providers** - add your LLM API keys
+4. Set up **Channels** - configure how the agent communicates
+5. Manage **Skills** - install capabilities from GitHub repos
+6. Edit **Workspace** files - customize agent behavior
+
+## Project Structure
+
+```
+src/
+├── app/                    # Next.js pages and API routes
+│   ├── api/                # Server-side API endpoints
+│   ├── dashboard/          # Overview page
+│   ├── machines/           # Machine management
+│   ├── deploy/             # Deployment wizard
+│   ├── skills/             # Skill management
+│   ├── mcp/                # MCP server config
+│   ├── providers/          # LLM provider config
+│   ├── channels/           # Channel config
+│   ├── backups/            # Backup & recovery
+│   ├── memory/             # Memory file editor
+│   └── workspace/          # Workspace config pages
+├── components/             # React components by feature
+├── hooks/                  # Custom React hooks (SWR-based)
+├── lib/                    # Business logic and utilities
+│   ├── backup/             # Snapshot operations
+│   ├── config/             # Config parsing and serialization
+│   ├── deploy/             # Deployment scripts and installer
+│   ├── machines/           # Machine CRUD and encryption
+│   ├── mcp/                # MCP server management
+│   ├── skills/             # Skill discovery and management
+│   ├── ssh/                # SSH connection pool and file ops
+│   ├── validation/         # Zod schemas
+│   └── workspace/          # Workspace file utilities
+└── store/                  # React Context state management
+```
+
+## License
+
+[MIT](LICENSE)
