@@ -1,6 +1,20 @@
+<div align="center">
+
 # OpenClaw Cockpit
 
-Web-based management cockpit for [OpenClaw](https://github.com/lynnlni/openclaw) AI agent instances. Deploy, configure, and monitor your AI agents across multiple remote servers from a single interface.
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/lynnlni/openclaw-cockpit/releases)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev/)
+
+Web-based management cockpit for [OpenClaw](https://github.com/lynnlni/openclaw) AI agent instances.
+Deploy, configure, and monitor your AI agents across multiple remote servers from a single interface.
+
+English | [中文](README_ZH.md)
+
+</div>
+
+---
 
 ## Features
 
@@ -81,16 +95,22 @@ Real-time overview of all registered machines showing connectivity, installation
 
 ## Tech Stack
 
-- **Framework**: Next.js 16 (App Router), React 19, TypeScript
-- **UI**: shadcn/ui, Radix UI, Tailwind CSS 4
-- **Editor**: CodeMirror (JSON + Markdown)
-- **Data Fetching**: SWR
-- **Validation**: Zod
-- **SSH**: node-ssh
+| Category | Technology |
+|----------|-----------|
+| Framework | Next.js 16 (App Router), React 19, TypeScript |
+| UI | shadcn/ui, Radix UI, Tailwind CSS 4 |
+| Editor | CodeMirror (JSON + Markdown) |
+| Data Fetching | SWR |
+| Validation | Zod |
+| SSH | node-ssh |
 
 ## Getting Started
 
 ```bash
+# Clone the repository
+git clone https://github.com/lynnlni/openclaw-cockpit.git
+cd openclaw-cockpit
+
 # Install dependencies
 npm install
 
@@ -121,12 +141,12 @@ Machine configurations are stored at `~/.openclaw-cockpit/machines.json`. Passwo
 
 ## Quick Start Guide
 
-1. Start the cockpit and go to **Machines** - add your remote server
-2. Go to **Deploy** - install OpenClaw on the server
-3. Configure **Providers** - add your LLM API keys
-4. Set up **Channels** - configure how the agent communicates
-5. Manage **Skills** - install capabilities from GitHub repos
-6. Edit **Workspace** files - customize agent behavior
+1. Start the cockpit and go to **Machines** — add your remote server
+2. Go to **Deploy** — install OpenClaw on the server
+3. Configure **Providers** — add your LLM API keys
+4. Set up **Channels** — configure how the agent communicates
+5. Manage **Skills** — install capabilities from GitHub repos
+6. Edit **Workspace** files — customize agent behavior
 
 ## Project Structure
 
@@ -158,6 +178,10 @@ src/
 │   └── workspace/          # Workspace file utilities
 └── store/                  # React Context state management
 ```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
