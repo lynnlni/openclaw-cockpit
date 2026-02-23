@@ -3,12 +3,25 @@
 # OpenClaw Cockpit
 
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/lynnlni/openclaw-cockpit/releases)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev/)
 
 [OpenClaw](https://github.com/lynnlni/openclaw) AI Agent 实例的 Web 管理驾驶舱。
 通过一个界面，部署、配置和监控分布在多台远程服务器上的 AI Agent。
+
+## OpenClaw Cockpit 是什么？
+
+OpenClaw Cockpit 是 OpenClaw 的**运维控制台**，把原本要 SSH + 手工改配置的工作，放到一个网页里做。你可以用它做这些事：
+
+- **多机运维面板** — 统一查看每台机器是否在线、OpenClaw 是否安装、服务状态和版本。
+- **一键部署/升级** — 通过部署向导在远程服务器安装或升级 OpenClaw，减少手动操作。
+- **集中配置管理** — 管理 Providers（模型和 Key）、Channels、MCP Servers、Skills 等核心配置。
+- **工作区编辑** — 在线改 `AGENTS.md`、`SOUL.md`、`MEMORY.md` 等文件，快速调整 Agent 行为。
+- **备份与恢复** — 做快照、导入导出配置，适合迁移机器和回滚故障。
+- **团队/多环境管理** — 适合同时管本地机、家用服务器、云主机（开发/测试/生产）这类场景。
+
+**一句话：** 它是 OpenClaw 的运维控制台，适合想把 AI Agent 部署和管理流程标准化的人。
 
 [English](README.md) | 中文
 
@@ -185,4 +198,4 @@ src/
 
 ## 许可证
 
-[MIT](LICENSE)
+[GPL-3.0](LICENSE)
