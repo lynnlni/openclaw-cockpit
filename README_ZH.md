@@ -1,5 +1,3 @@
-<div align="center">
-
 # OpenClaw Cockpit
 
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/lynnlni/openclaw-cockpit/releases)
@@ -7,10 +5,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev/)
 
-[OpenClaw](https://github.com/lynnlni/openclaw) AI Agent 实例的 Web 管理驾驶舱。
-通过一个界面，部署、配置和监控分布在多台远程服务器上的 AI Agent。
-
-## OpenClaw Cockpit 是什么？
+[OpenClaw](https://github.com/lynnlni/openclaw) AI Agent 实例的 Web 管理驾驶舱。通过一个界面，部署、配置和监控分布在多台远程服务器上的 AI Agent。
 
 OpenClaw Cockpit 是 OpenClaw 的**运维控制台**，把原本要 SSH + 手工改配置的工作，放到一个网页里做。你可以用它做这些事：
 
@@ -24,8 +19,6 @@ OpenClaw Cockpit 是 OpenClaw 的**运维控制台**，把原本要 SSH + 手工
 **一句话：** 它是 OpenClaw 的运维控制台，适合想把 AI Agent 部署和管理流程标准化的人。
 
 [English](README.md) | 中文
-
-</div>
 
 ---
 

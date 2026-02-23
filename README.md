@@ -1,5 +1,3 @@
-<div align="center">
-
 # OpenClaw Cockpit
 
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/lynnlni/openclaw-cockpit/releases)
@@ -7,10 +5,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev/)
 
-Web-based management cockpit for [OpenClaw](https://github.com/lynnlni/openclaw) AI agent instances.
-Deploy, configure, and monitor your AI agents across multiple remote servers from a single interface.
-
-## What is OpenClaw Cockpit?
+Web-based management cockpit for [OpenClaw](https://github.com/lynnlni/openclaw) AI agent instances. Deploy, configure, and monitor your AI agents across multiple remote servers from a single interface.
 
 OpenClaw Cockpit is the **ops console for OpenClaw** — it replaces the tedious SSH + manual config editing workflow with a unified web interface. Here's what you can do with it:
 
@@ -24,8 +19,6 @@ OpenClaw Cockpit is the **ops console for OpenClaw** — it replaces the tedious
 **In one sentence:** OpenClaw Cockpit is the ops control plane for people who want to standardize AI agent deployment and management.
 
 English | [中文](README_ZH.md)
-
-</div>
 
 ---
 
