@@ -5,9 +5,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev/)
 
-[OpenClaw](https://github.com/lynnlni/openclaw) AI Agent 实例的 Web 管理驾驶舱。通过一个界面，部署、配置和监控分布在多台远程服务器上的 AI Agent。
-
-OpenClaw Cockpit 是 OpenClaw 的**运维控制台**，把原本要 SSH + 手工改配置的工作，放到一个网页里做。你可以用它做这些事：
+OpenClaw Cockpit 是 [OpenClaw](https://github.com/lynnlni/openclaw) AI Agent 的 Web 运维控制台，让你无需 SSH 和手工改配置，通过一个界面即可在多台远程服务器上部署、配置和监控 Agent。你可以用它做这些事：
 
 - **多机运维面板** — 统一查看每台机器是否在线、OpenClaw 是否安装、服务状态和版本。
 - **一键部署/升级** — 通过部署向导在远程服务器安装或升级 OpenClaw，减少手动操作。

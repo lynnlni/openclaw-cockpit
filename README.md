@@ -5,9 +5,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev/)
 
-Web-based management cockpit for [OpenClaw](https://github.com/lynnlni/openclaw) AI agent instances. Deploy, configure, and monitor your AI agents across multiple remote servers from a single interface.
-
-OpenClaw Cockpit is the **ops console for OpenClaw** — it replaces the tedious SSH + manual config editing workflow with a unified web interface. Here's what you can do with it:
+OpenClaw Cockpit is the **ops console** for [OpenClaw](https://github.com/lynnlni/openclaw) AI agents — it replaces the tedious SSH + manual config editing workflow, letting you deploy, configure, and monitor agents across multiple remote servers from a single web interface. Here's what you can do with it:
 
 - **Multi-machine ops panel** — Monitor all your servers at a glance: online status, OpenClaw installation state, service health, and version info.
 - **One-click deploy & upgrade** — A guided wizard handles remote installation and upgrades, eliminating manual steps.
