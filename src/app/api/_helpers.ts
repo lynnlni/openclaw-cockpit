@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-import { getMachine, getDecryptedConfig } from '@/lib/machines/config'
+import { getMachine, getDecryptedConfig, validatePushToken } from '@/lib/machines/config'
 import type { Machine } from '@/lib/machines/types'
 import type { SSHConnectionConfig } from '@/lib/ssh/types'
 import { machineIdSchema } from '@/lib/validation/schemas'
@@ -40,6 +40,10 @@ export function resolveMachineWithSSH(
     return result
   }
 
+  if (result.connectionType === 'push') {
+    return jsonError('This operation is not supported for push-type machines', 400)
+  }
+
   const sshConfig = getDecryptedConfig(result)
   return { machine: result, sshConfig }
 }
@@ -52,4 +56,15 @@ export function isErrorResponse(
 
 export function containsTraversal(segments: string[]): boolean {
   return segments.some((s) => s === '..' || s.includes('..'))
+}
+
+export function verifyPushToken(
+  machineId: string,
+  authHeader: string | null
+): boolean {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return false
+  }
+  const token = authHeader.slice(7)
+  return validatePushToken(machineId, token)
 }

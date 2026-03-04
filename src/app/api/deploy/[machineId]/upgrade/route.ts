@@ -9,6 +9,32 @@ interface RouteParams {
   params: Promise<{ machineId: string }>
 }
 
+// Check latest version without upgrading
+export async function GET(
+  _request: NextRequest,
+  { params }: RouteParams
+): Promise<Response> {
+  try {
+    const { machineId } = await params
+    const result = resolveMachineWithSSH(machineId)
+    if (isErrorResponse(result)) return result
+
+    const { machine, sshConfig } = result
+
+    const [localResult, latestResult] = await Promise.all([
+      exec(machine.id, sshConfig, getLocalVersionCommand()),
+      exec(machine.id, sshConfig, getLatestVersionCommand()),
+    ])
+
+    return jsonSuccess(parseVersions(localResult.stdout, latestResult.stdout))
+  } catch (error) {
+    return jsonError(
+      error instanceof Error ? error.message : 'Version check failed',
+      500
+    )
+  }
+}
+
 export async function POST(
   _request: NextRequest,
   { params }: RouteParams

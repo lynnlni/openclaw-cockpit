@@ -4,8 +4,26 @@ import type { BackupSnapshot } from './types'
 
 export function getListSnapshotsCommand(openclawPath: string): string {
   const backupsDir = getSnapshotDir(openclawPath)
-  // Use stat for machine-readable timestamps; fall back to ls
-  return `find ${shellEscapePath(backupsDir)} -maxdepth 1 -name "*.tar.gz" -printf "%T@ %s %f\\n" 2>/dev/null | sort -rn || ls -lh ${shellEscapePath(backupsDir)} 2>/dev/null || echo ""`
+  const dir = shellEscapePath(backupsDir)
+  // GNU find -printf is Linux-only; BSD find (macOS) doesn't support it.
+  // Capture find output into a variable so we can test whether it worked,
+  // rather than relying on exit code (which gets masked by the pipe to sort).
+  return [
+    `_d=${dir}`,
+    `if [ ! -d "$_d" ]; then echo ""; exit 0; fi`,
+    `_gnu=$(find "$_d" -maxdepth 1 -name "*.tar.gz" -printf "%T@ %s %f\\n" 2>/dev/null | sort -rn)`,
+    `if [ -n "$_gnu" ]; then`,
+    `  echo "$_gnu"`,
+    `else`,
+    `  for _f in "$_d"/*.tar.gz; do`,
+    `    [ -f "$_f" ] || continue`,
+    `    _mt=$(stat -f "%m" "$_f" 2>/dev/null || stat -c "%Y" "$_f" 2>/dev/null || echo 0)`,
+    `    _sz=$(stat -f "%z" "$_f" 2>/dev/null || stat -c "%s" "$_f" 2>/dev/null || echo 0)`,
+    `    _bn=$(basename "$_f")`,
+    `    echo "$_mt.0 $_sz $_bn"`,
+    `  done | sort -rn`,
+    `fi`,
+  ].join('\n')
 }
 
 export function parseSnapshotList(output: string): BackupSnapshot[] {
@@ -34,7 +52,7 @@ export function parseSnapshotList(output: string): BackupSnapshot[] {
           createdAt: new Date(timestamp * 1000).toISOString(),
           size: formatBytes(sizeBytes),
           path: fileName,
-          type: name.includes('workspace') ? 'workspace' as const : 'full' as const,
+          type: inferSnapshotType(name),
         }
       })
   }
@@ -47,15 +65,24 @@ export function parseSnapshotList(output: string): BackupSnapshot[] {
       const fileName = parts[parts.length - 1] ?? ''
       const size = parts[4] ?? '0'
       const dateStr = [parts[5], parts[6], parts[7]].join(' ')
+      const name = fileName.replace('.tar.gz', '')
 
       return {
-        name: fileName.replace('.tar.gz', ''),
+        name,
         createdAt: dateStr,
         size,
         path: fileName,
-        type: fileName.includes('workspace') ? 'workspace' as const : 'full' as const,
+        type: inferSnapshotType(name),
       }
     })
+}
+
+export function inferSnapshotType(name: string): 'full' | 'workspace' {
+  // New naming convention: snapshot-ws-* = workspace, snapshot-full-* = full
+  if (name.startsWith('snapshot-ws-')) return 'workspace'
+  if (name.startsWith('snapshot-full-')) return 'full'
+  // Legacy fallback: any name containing 'workspace' was a workspace backup
+  return name.includes('workspace') ? 'workspace' : 'full'
 }
 
 function formatBytes(bytes: number): string {

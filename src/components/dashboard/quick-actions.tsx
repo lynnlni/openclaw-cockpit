@@ -1,44 +1,156 @@
-import Link from 'next/link'
+'use client'
+
+import { useState, useCallback } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { Rocket, Settings, Terminal } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { RefreshCw, Pencil, Terminal } from 'lucide-react'
+import type { Machine } from '@/lib/machines/types'
+import { useMachines } from '@/hooks/use-machines'
+import { MachineForm, type MachineFormData } from '@/components/machines/machine-form'
+import { SshConsoleDialog } from '@/components/dashboard/ssh-console-dialog'
 
 interface QuickActionsProps {
-  machineId: string
+  machine: Machine
+  onRefreshStatus?: () => Promise<unknown>
+  statusRefreshing?: boolean
 }
 
-const actions = [
-  { href: '/deploy', icon: Rocket, label: '部署管理' },
-  { href: '/providers', icon: Settings, label: '配置' },
-  { href: '/memory', icon: Terminal, label: '记忆管理' },
-] as const
+export function QuickActions({ machine, onRefreshStatus, statusRefreshing }: QuickActionsProps) {
+  const { mutate: mutateMachines } = useMachines()
+  const [editOpen, setEditOpen] = useState(false)
+  const [updating, setUpdating] = useState(false)
+  const [consoleOpen, setConsoleOpen] = useState(false)
 
-export function QuickActions({ machineId }: QuickActionsProps) {
-  void machineId
+  const handleRefresh = useCallback(async () => {
+    if (onRefreshStatus) await onRefreshStatus()
+  }, [onRefreshStatus])
 
-  return (
-    <div className="flex items-center gap-1">
-      {actions.map((action) => {
-        const Icon = action.icon
-        return (
-          <Tooltip key={action.href}>
+  const handleEditSubmit = useCallback(async (data: MachineFormData) => {
+    const payload = { ...data }
+    if (!payload.password) delete payload.password
+    if (!payload.passphrase) delete payload.passphrase
+
+    setUpdating(true)
+    try {
+      const res = await fetch(`/api/machines/${machine.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error ?? '更新失败')
+      }
+      await mutateMachines()
+      setEditOpen(false)
+      toast.success('设备已更新')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '更新失败')
+    } finally {
+      setUpdating(false)
+    }
+  }, [machine.id, mutateMachines])
+
+  if (machine.connectionType === 'push') {
+    return (
+      <>
+        <div className="flex items-center gap-1">
+          <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon-xs" asChild>
-                <Link href={action.href}>
-                  <Icon className="h-3.5 w-3.5" />
-                </Link>
+              <Button variant="ghost" size="icon-xs" onClick={() => setEditOpen(true)}>
+                <Pencil className="h-3.5 w-3.5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p>{action.label}</p>
-            </TooltipContent>
+            <TooltipContent side="bottom"><p>编辑设备</p></TooltipContent>
           </Tooltip>
-        )
-      })}
-    </div>
+        </div>
+
+        <AlertDialog open={editOpen} onOpenChange={setEditOpen}>
+          <AlertDialogContent className="max-w-md">
+            <AlertDialogHeader>
+              <AlertDialogTitle>编辑设备</AlertDialogTitle>
+            </AlertDialogHeader>
+            <MachineForm
+              machine={machine}
+              onSubmit={handleEditSubmit}
+              onCancel={() => setEditOpen(false)}
+              submitting={updating}
+            />
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
+    )
+  }
+
+  return (
+    <>
+      <div className="flex items-center gap-1">
+        {/* Button 1: Refresh status in-card */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={handleRefresh}
+              disabled={statusRefreshing}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${statusRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom"><p>刷新</p></TooltipContent>
+        </Tooltip>
+
+        {/* Button 2: Inline edit dialog */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon-xs" onClick={() => setEditOpen(true)}>
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom"><p>编辑设备</p></TooltipContent>
+        </Tooltip>
+
+        {/* Button 3: SSH Terminal */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon-xs" onClick={() => setConsoleOpen(true)}>
+              <Terminal className="h-3.5 w-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom"><p>SSH 终端</p></TooltipContent>
+        </Tooltip>
+      </div>
+
+      <AlertDialog open={editOpen} onOpenChange={setEditOpen}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>编辑设备</AlertDialogTitle>
+          </AlertDialogHeader>
+          <MachineForm
+            machine={machine}
+            onSubmit={handleEditSubmit}
+            onCancel={() => setEditOpen(false)}
+            submitting={updating}
+          />
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <SshConsoleDialog
+        open={consoleOpen}
+        machine={machine}
+        onClose={() => setConsoleOpen(false)}
+      />
+    </>
   )
 }

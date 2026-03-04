@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { join } from 'path'
 
-import { readFile, writeFile } from '@/lib/ssh/client'
+import { readFile, readFileStat, writeFile } from '@/lib/ssh/client'
 import { getWorkspacePaths } from '@/lib/workspace/parser'
 import {
   jsonSuccess,
@@ -33,9 +33,12 @@ export async function GET(
     const workspace = getWorkspacePaths(machine.openclawPath)
     const filePath = join(workspace.path, ...pathSegments)
 
-    const content = await readFile(machine.id, sshConfig, filePath)
+    const [content, meta] = await Promise.all([
+      readFile(machine.id, sshConfig, filePath),
+      readFileStat(machine.id, sshConfig, filePath),
+    ])
 
-    return jsonSuccess({ path: filePath, content })
+    return jsonSuccess({ path: filePath, content, size: meta.size, modifiedAt: meta.modifiedAt })
   } catch (error) {
     return jsonError(
       error instanceof Error ? error.message : 'Failed to read file',

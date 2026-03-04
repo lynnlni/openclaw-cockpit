@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Server } from 'lucide-react'
+import { Server, Wifi } from 'lucide-react'
 
 export function MachineSwitcher() {
   const { selectedMachineId, setSelectedMachineId } = useMachine()
@@ -41,14 +41,21 @@ export function MachineSwitcher() {
       >
         <SelectTrigger className="w-full bg-secondary/50 border-border">
           <div className="flex items-center gap-2 truncate">
-            <Server className="h-4 w-4 shrink-0 text-muted-foreground" />
-            <SelectValue placeholder="未选择机器" />
+            {(() => {
+              const selected = machines?.find((m) => m.id === selectedMachineId)
+              return selected?.connectionType === 'push' ? (
+                <Wifi className="h-4 w-4 shrink-0 text-sky-400" />
+              ) : (
+                <Server className="h-4 w-4 shrink-0 text-muted-foreground" />
+              )
+            })()}
+            <SelectValue placeholder="未选择设备" />
           </div>
         </SelectTrigger>
         <SelectContent>
           {(!machines || machines.length === 0) && (
             <div className="px-2 py-1.5 text-sm text-muted-foreground">
-              暂无机器，请先在机器管理中添加
+              暂无设备，请先在设备管理中添加
             </div>
           )}
           {machines?.map((machine) => (

@@ -17,7 +17,7 @@ export async function GET(
     const result = resolveMachine(id)
     if (isErrorResponse(result)) return result
 
-    const { encryptedPassword, ...safeData } = result
+    const { encryptedPassword: _ep, pushToken: _pt, ...safeData } = result
     return jsonSuccess(safeData)
   } catch (error) {
     return jsonError(
@@ -44,7 +44,7 @@ export async function PUT(
     }
 
     const updated = updateMachine(id, parsed.data)
-    const { encryptedPassword, ...safeData } = updated
+    const { encryptedPassword: _ep2, pushToken: _pt2, ...safeData } = updated
     return jsonSuccess(safeData)
   } catch (error) {
     return jsonError(

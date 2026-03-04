@@ -3,7 +3,7 @@
 import type { BackupSnapshot } from '@/lib/backup/types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Archive, Download, Trash2, RotateCcw, Server } from 'lucide-react'
+import { Archive, Download, Trash2, RotateCcw, Server, Wifi } from 'lucide-react'
 
 interface BackupListProps {
   snapshots: BackupSnapshot[]
@@ -63,10 +63,25 @@ export function BackupList({ snapshots, onDownload, onDelete, onRestore }: Backu
               <td className="px-4 py-3">
                 {snapshot.machineName ? (
                   <div className="flex items-center gap-1.5">
-                    <Server className="h-3 w-3 text-muted-foreground/60" />
-                    <span className="text-sm text-foreground">{snapshot.machineName}</span>
-                    {snapshot.machineHost && (
-                      <span className="text-xs text-muted-foreground">({snapshot.machineHost})</span>
+                    {snapshot.source === 'push' ? (
+                      <>
+                        <Wifi className="h-3 w-3 text-sky-400" />
+                        <span className="text-sm text-foreground">{snapshot.machineName}</span>
+                        <Badge
+                          variant="secondary"
+                          className="bg-sky-500/15 text-sky-400 text-xs px-1.5 py-0"
+                        >
+                          推送
+                        </Badge>
+                      </>
+                    ) : (
+                      <>
+                        <Server className="h-3 w-3 text-muted-foreground/60" />
+                        <span className="text-sm text-foreground">{snapshot.machineName}</span>
+                        {snapshot.machineHost && (
+                          <span className="text-xs text-muted-foreground">({snapshot.machineHost})</span>
+                        )}
+                      </>
                     )}
                   </div>
                 ) : (

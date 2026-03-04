@@ -14,6 +14,7 @@ interface MachineFormProps {
 
 export interface MachineFormData {
   name: string
+  connectionType: 'ssh' | 'push'
   host: string
   port: number
   username: string
@@ -21,11 +22,15 @@ export interface MachineFormData {
   password?: string
   privateKeyPath?: string
   passphrase?: string
+  pushRetainDays?: 1 | 2 | 3 | 7
+  dashboardUrl?: string
+  pushCronSchedule?: string
   openclawPath: string
 }
 
 const INITIAL_DATA: MachineFormData = {
   name: '',
+  connectionType: 'ssh',
   host: '',
   port: 22,
   username: 'root',
@@ -33,19 +38,25 @@ const INITIAL_DATA: MachineFormData = {
   password: '',
   privateKeyPath: '',
   passphrase: '',
+  dashboardUrl: '',
+  pushCronSchedule: '0 2 * * *',
   openclawPath: '~/.openclaw',
 }
 
 function formDataFromMachine(machine: Machine): MachineFormData {
   return {
     name: machine.name,
-    host: machine.host,
-    port: machine.port,
-    username: machine.username,
-    authType: machine.authType,
+    connectionType: machine.connectionType ?? 'ssh',
+    host: machine.host ?? '',
+    port: machine.port ?? 22,
+    username: machine.username ?? '',
+    authType: machine.authType ?? 'password',
     password: '',
     privateKeyPath: machine.privateKeyPath ?? '',
     passphrase: '',
+    pushRetainDays: machine.pushRetainDays,
+    dashboardUrl: machine.dashboardUrl ?? '',
+    pushCronSchedule: machine.pushCronSchedule ?? '0 2 * * *',
     openclawPath: machine.openclawPath,
   }
 }
@@ -62,6 +73,10 @@ export function MachineForm({ machine, onSubmit, onCancel, submitting }: Machine
     []
   )
 
+  const handleConnectionTypeChange = useCallback((type: 'ssh' | 'push') => {
+    setFormData((prev) => ({ ...prev, connectionType: type }))
+  }, [])
+
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault()
@@ -70,8 +85,36 @@ export function MachineForm({ machine, onSubmit, onCancel, submitting }: Machine
     [formData, onSubmit]
   )
 
+  const isPush = formData.connectionType === 'push'
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Connection type selector */}
+      <FormField label="接入方式" required>
+        <div className="flex gap-2">
+          {(['ssh', 'push'] as const).map((type) => (
+            <button
+              key={type}
+              type="button"
+              onClick={() => handleConnectionTypeChange(type)}
+              className={cn(
+                'rounded-md px-3 py-1.5 text-sm transition-colors',
+                formData.connectionType === type
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {type === 'ssh' ? 'SSH 直连' : '推送接入（无公网 IP）'}
+            </button>
+          ))}
+        </div>
+        {isPush && (
+          <p className="text-xs text-muted-foreground mt-1">
+            推送接入：OpenClaw 服务器通过脚本主动推送备份，适合无公网 IP 的设备
+          </p>
+        )}
+      </FormField>
+
       <FormField label="名称" required>
         <input
           className={inputClass}
@@ -82,87 +125,92 @@ export function MachineForm({ machine, onSubmit, onCancel, submitting }: Machine
         />
       </FormField>
 
-      <div className="grid grid-cols-2 gap-4">
-        <FormField label="主机" required>
-          <input
-            className={inputClass}
-            value={formData.host}
-            onChange={(e) => handleChange('host', e.target.value)}
-            placeholder="192.168.1.100"
-            required
-          />
-        </FormField>
-        <FormField label="端口">
-          <input
-            className={inputClass}
-            type="number"
-            value={formData.port}
-            onChange={(e) => handleChange('port', Number(e.target.value))}
-            min={1}
-            max={65535}
-          />
-        </FormField>
-      </div>
-
-      <FormField label="用户名" required>
-        <input
-          className={inputClass}
-          value={formData.username}
-          onChange={(e) => handleChange('username', e.target.value)}
-          required
-        />
-      </FormField>
-
-      <FormField label="认证方式">
-        <div className="flex gap-2">
-          {(['password', 'privateKey'] as const).map((type) => (
-            <button
-              key={type}
-              type="button"
-              onClick={() => handleChange('authType', type)}
-              className={cn(
-                'rounded-md px-3 py-1.5 text-sm transition-colors',
-                formData.authType === type
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {type === 'password' ? '密码' : '私钥'}
-            </button>
-          ))}
-        </div>
-      </FormField>
-
-      {formData.authType === 'password' ? (
-        <FormField label="密码">
-          <input
-            className={inputClass}
-            type="password"
-            value={formData.password ?? ''}
-            onChange={(e) => handleChange('password', e.target.value)}
-            placeholder={machine ? '留空保持不变' : ''}
-          />
-        </FormField>
-      ) : (
+      {/* SSH-only fields */}
+      {!isPush && (
         <>
-          <FormField label="私钥路径" required>
+          <div className="grid grid-cols-2 gap-4">
+            <FormField label="主机" required>
+              <input
+                className={inputClass}
+                value={formData.host}
+                onChange={(e) => handleChange('host', e.target.value)}
+                placeholder="192.168.1.100"
+                required
+              />
+            </FormField>
+            <FormField label="端口">
+              <input
+                className={inputClass}
+                type="number"
+                value={formData.port}
+                onChange={(e) => handleChange('port', Number(e.target.value))}
+                min={1}
+                max={65535}
+              />
+            </FormField>
+          </div>
+
+          <FormField label="用户名" required>
             <input
               className={inputClass}
-              value={formData.privateKeyPath ?? ''}
-              onChange={(e) => handleChange('privateKeyPath', e.target.value)}
-              placeholder="~/.ssh/id_rsa"
+              value={formData.username}
+              onChange={(e) => handleChange('username', e.target.value)}
               required
             />
           </FormField>
-          <FormField label="私钥密码">
-            <input
-              className={inputClass}
-              type="password"
-              value={formData.passphrase ?? ''}
-              onChange={(e) => handleChange('passphrase', e.target.value)}
-              placeholder="可选"
-            />
+
+          <FormField label="认证方式">
+            <div className="flex gap-2">
+              {(['password', 'privateKey'] as const).map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => handleChange('authType', type)}
+                  className={cn(
+                    'rounded-md px-3 py-1.5 text-sm transition-colors',
+                    formData.authType === type
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {type === 'password' ? '密码' : '私钥'}
+                </button>
+              ))}
+            </div>
           </FormField>
+
+          {formData.authType === 'password' ? (
+            <FormField label="密码">
+              <input
+                className={inputClass}
+                type="password"
+                value={formData.password ?? ''}
+                onChange={(e) => handleChange('password', e.target.value)}
+                placeholder={machine ? '留空保持不变' : ''}
+              />
+            </FormField>
+          ) : (
+            <>
+              <FormField label="私钥路径" required>
+                <input
+                  className={inputClass}
+                  value={formData.privateKeyPath ?? ''}
+                  onChange={(e) => handleChange('privateKeyPath', e.target.value)}
+                  placeholder="~/.ssh/id_rsa"
+                  required
+                />
+              </FormField>
+              <FormField label="私钥密码">
+                <input
+                  className={inputClass}
+                  type="password"
+                  value={formData.passphrase ?? ''}
+                  onChange={(e) => handleChange('passphrase', e.target.value)}
+                  placeholder="可选"
+                />
+              </FormField>
+            </>
+          )}
         </>
       )}
 
@@ -177,6 +225,37 @@ export function MachineForm({ machine, onSubmit, onCancel, submitting }: Machine
           用户配置主目录，程序安装在 /usr/lib/node_modules/openclaw/
         </p>
       </FormField>
+
+      {/* Push-only configuration fields */}
+      {isPush && (
+        <>
+          <FormField label="Dashboard 地址" required>
+            <input
+              className={inputClass}
+              value={formData.dashboardUrl ?? ''}
+              onChange={(e) => handleChange('dashboardUrl', e.target.value)}
+              placeholder="http://192.168.1.10:3000"
+              required
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              OpenClaw 服务器能访问到此 Dashboard 的地址（局域网 IP 或公网地址均可）
+            </p>
+          </FormField>
+
+          <FormField label="备份时间（Cron）">
+            <input
+              className={inputClass}
+              value={formData.pushCronSchedule ?? ''}
+              onChange={(e) => handleChange('pushCronSchedule', e.target.value)}
+              placeholder="0 2 * * *"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Cron 表达式，默认 <code>0 2 * * *</code>（每天凌晨 2 点）。
+              格式：分 时 日 月 周
+            </p>
+          </FormField>
+        </>
+      )}
 
       <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="outline" onClick={onCancel}>

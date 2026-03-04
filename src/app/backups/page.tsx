@@ -13,7 +13,13 @@ import { CloneDialog } from '@/components/backups/clone-dialog'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
 import { Button } from '@/components/ui/button'
-import { Plus, Copy, Server } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Plus, Copy, Server, ChevronDown } from 'lucide-react'
 import type { BackupSnapshot } from '@/lib/backup/types'
 
 async function safeFetch(url: string, options?: RequestInit): Promise<Response> {
@@ -43,14 +49,20 @@ export default function BackupsPage() {
   const [restoreTarget, setRestoreTarget] = useState<BackupSnapshot | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<BackupSnapshot | null>(null)
 
-  const handleCreate = useCallback(async () => {
+  const currentMachine = selectedMachineId
+    ? machines?.find((m) => m.id === selectedMachineId)
+    : undefined
+
+  const isPushMachine = currentMachine?.connectionType === 'push'
+
+  const handleCreate = useCallback(async (type: 'full' | 'workspace' = 'full') => {
     if (!selectedMachineId) return
     setCreating(true)
     try {
       const res = await safeFetch(`/api/backups/${selectedMachineId}/snapshots`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'full' }),
+        body: JSON.stringify({ type }),
       })
       const body = await res.json()
       await mutate()
@@ -86,7 +98,7 @@ export default function BackupsPage() {
     } finally {
       setExporting(false)
     }
-  }, [selectedMachineId])
+  }, [selectedMachineId, currentMachine])
 
   const handleImport = useCallback(
     async (file: File) => {
@@ -111,6 +123,7 @@ export default function BackupsPage() {
   const handleDownload = useCallback(
     async (snapshot: BackupSnapshot) => {
       if (!selectedMachineId) return
+      // Push backups are stored locally; use the pull endpoint is for OpenClaw — Dashboard downloads via the same endpoint
       try {
         const res = await safeFetch(
           `/api/backups/${selectedMachineId}/snapshots/${encodeURIComponent(snapshot.name)}/download`
@@ -132,18 +145,33 @@ export default function BackupsPage() {
   const handleRestore = useCallback(async () => {
     if (!selectedMachineId || !restoreTarget) return
     try {
-      const res = await safeFetch(
-        `/api/backups/${selectedMachineId}/snapshots/${encodeURIComponent(restoreTarget.name)}/restore`,
-        { method: 'POST' }
-      )
-      const body = await res.json()
-      await mutate()
-      setRestoreTarget(null)
-      toast.success(`恢复成功（安全快照: ${body.data?.safetySnapshot ?? 'N/A'}）`)
+      if (isPushMachine) {
+        // Push machine: set pending restore flag
+        await safeFetch(
+          `/api/backups/${selectedMachineId}/restore-pending`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ snapshotName: restoreTarget.name }),
+          }
+        )
+        setRestoreTarget(null)
+        toast.success('恢复指令已下发，等待 OpenClaw 下次运行脚本时执行')
+      } else {
+        // SSH machine: restore immediately
+        const res = await safeFetch(
+          `/api/backups/${selectedMachineId}/snapshots/${encodeURIComponent(restoreTarget.name)}/restore`,
+          { method: 'POST' }
+        )
+        const body = await res.json()
+        await mutate()
+        setRestoreTarget(null)
+        toast.success(`恢复成功（安全快照: ${body.data?.safetySnapshot ?? 'N/A'}）`)
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '恢复失败')
     }
-  }, [selectedMachineId, restoreTarget, mutate])
+  }, [selectedMachineId, restoreTarget, mutate, isPushMachine])
 
   const handleDelete = useCallback(async () => {
     if (!selectedMachineId || !deleteTarget) return
@@ -177,10 +205,6 @@ export default function BackupsPage() {
     []
   )
 
-  const currentMachine = selectedMachineId
-    ? machines?.find((m) => m.id === selectedMachineId)
-    : undefined
-
   if (!selectedMachineId) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3">
@@ -205,21 +229,38 @@ export default function BackupsPage() {
           <h1 className="text-lg font-semibold text-foreground">备份恢复</h1>
           <p className="text-sm text-muted-foreground">管理配置快照和备份</p>
         </div>
-        <div className="flex items-center gap-2">
-          <BackupActions
-            onExport={handleExport}
-            onImport={() => setImportOpen(true)}
-            exporting={exporting}
-          />
-          <Button variant="outline" size="sm" onClick={() => setCloneOpen(true)}>
-            <Copy className="h-3.5 w-3.5" />
-            克隆
-          </Button>
-          <Button onClick={handleCreate} disabled={creating}>
-            <Plus className="h-4 w-4" />
-            {creating ? '创建中...' : '创建快照'}
-          </Button>
-        </div>
+        {!isPushMachine && (
+          <div className="flex items-center gap-2">
+            <BackupActions
+              onExport={handleExport}
+              onImport={() => setImportOpen(true)}
+              exporting={exporting}
+            />
+            <Button variant="outline" size="sm" onClick={() => setCloneOpen(true)}>
+              <Copy className="h-3.5 w-3.5" />
+              克隆
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button disabled={creating}>
+                  <Plus className="h-4 w-4" />
+                  {creating ? '创建中...' : '创建快照'}
+                  <ChevronDown className="ml-1 h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleCreate('full')}>
+                  <span className="font-medium">完整备份</span>
+                  <span className="ml-2 text-xs text-muted-foreground">openclaw.json + workspace/</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleCreate('workspace')}>
+                  <span className="font-medium">工作区备份</span>
+                  <span className="ml-2 text-xs text-muted-foreground">仅 workspace/（含所有 .md、skills、memory、knowledge、canvas）</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
       </div>
 
       <BackupList
@@ -229,17 +270,19 @@ export default function BackupsPage() {
         onRestore={setRestoreTarget}
       />
 
-      <ImportDialog
-        open={importOpen}
-        onClose={() => setImportOpen(false)}
-        onImport={handleImport}
-      />
+      {!isPushMachine && (
+        <ImportDialog
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+          onImport={handleImport}
+        />
+      )}
 
       <RestoreConfirmDialog
         open={restoreTarget !== null}
         snapshot={restoreTarget}
         currentMachineName={currentMachine?.name}
-        currentMachineHost={currentMachine?.host}
+        currentMachineHost={currentMachine?.connectionType === 'push' ? '推送接入' : currentMachine?.host}
         onConfirm={handleRestore}
         onCancel={() => setRestoreTarget(null)}
       />
@@ -254,13 +297,15 @@ export default function BackupsPage() {
         confirmLabel="删除"
       />
 
-      <CloneDialog
-        open={cloneOpen}
-        machines={machines ?? []}
-        currentMachineId={selectedMachineId}
-        onClone={handleClone}
-        onClose={() => setCloneOpen(false)}
-      />
+      {!isPushMachine && (
+        <CloneDialog
+          open={cloneOpen}
+          machines={machines ?? []}
+          currentMachineId={selectedMachineId}
+          onClone={handleClone}
+          onClose={() => setCloneOpen(false)}
+        />
+      )}
     </div>
   )
 }

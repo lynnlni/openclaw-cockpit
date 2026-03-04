@@ -15,6 +15,7 @@ import {
   Server,
   Calendar,
 } from 'lucide-react'
+import { formatFileSize, formatModifiedAt } from '@/lib/utils'
 import type { DailyMemory } from '@/lib/workspace/types'
 
 export default function DailyMemoryPage() {
@@ -189,8 +190,15 @@ export default function DailyMemoryPage() {
               </div>
             ) : (
               <>
-                <div className="border-b border-border px-4 py-1.5 text-xs text-muted-foreground">
-                  {selectedFileName}
+                <div className="flex items-center gap-3 border-b border-border px-4 py-1.5 text-xs text-muted-foreground">
+                  <span>{selectedFileName}</span>
+                  {(fileData?.size !== undefined || fileData?.modifiedAt) && (
+                    <span className="text-muted-foreground/50">
+                      {fileData.size !== undefined && formatFileSize(fileData.size)}
+                      {fileData.size !== undefined && fileData.modifiedAt && ' · '}
+                      {fileData.modifiedAt && `修改于 ${formatModifiedAt(fileData.modifiedAt)}`}
+                    </span>
+                  )}
                 </div>
                 <MarkdownEditor
                   value={editorContent}

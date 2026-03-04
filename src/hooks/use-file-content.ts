@@ -7,6 +7,8 @@ import { fetcher } from './fetcher'
 interface FileContentResponse {
   path: string
   content: string
+  size?: number
+  modifiedAt?: string
 }
 
 function buildFileUrl(machineId: string, filePath: string): string {

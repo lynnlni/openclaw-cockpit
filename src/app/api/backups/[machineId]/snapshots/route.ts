@@ -4,19 +4,21 @@ import { z } from 'zod'
 import { exec } from '@/lib/ssh/client'
 import { getExportCommand } from '@/lib/backup/exporter'
 import { getListSnapshotsCommand, parseSnapshotList } from '@/lib/backup/snapshot'
-import { jsonSuccess, jsonError, resolveMachineWithSSH, isErrorResponse } from '../../../_helpers'
+import { listPushBackups } from '@/lib/backup/push-store'
+import { jsonSuccess, jsonError, resolveMachine, resolveMachineWithSSH, isErrorResponse } from '../../../_helpers'
 
 function sanitizeName(name: string): string {
   return name.replace(/[^a-zA-Z0-9_-]/g, '-').replace(/-+/g, '-').slice(0, 30)
 }
 
-function generateSnapshotName(machineName: string): string {
+function generateSnapshotName(machineName: string, type: 'full' | 'workspace'): string {
   const now = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
   const date = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`
   const time = `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`
   const safeName = sanitizeName(machineName)
-  return `snapshot-${safeName}-${date}-${time}`
+  const typePrefix = type === 'workspace' ? 'ws' : 'full'
+  return `snapshot-${typePrefix}-${safeName}-${date}-${time}`
 }
 
 const createSnapshotSchema = z.object({
@@ -34,10 +36,24 @@ export async function GET(
 ): Promise<Response> {
   try {
     const { machineId } = await params
+    const machine = resolveMachine(machineId)
+    if (isErrorResponse(machine)) return machine
+
+    // Push machines: return locally stored push backups
+    if (machine.connectionType === 'push') {
+      const snapshots = listPushBackups(machineId).map((s) => ({
+        ...s,
+        machineName: machine.name,
+        machineHost: undefined,
+      }))
+      return jsonSuccess(snapshots)
+    }
+
+    // SSH machines: original behavior
     const result = resolveMachineWithSSH(machineId)
     if (isErrorResponse(result)) return result
 
-    const { machine, sshConfig } = result
+    const { sshConfig } = result
     const listResult = await exec(
       machine.id,
       sshConfig,
@@ -65,10 +81,18 @@ export async function POST(
 ): Promise<Response> {
   try {
     const { machineId } = await params
+    const machine = resolveMachine(machineId)
+    if (isErrorResponse(machine)) return machine
+
+    // Push machines don't support creating snapshots via Dashboard
+    if (machine.connectionType === 'push') {
+      return jsonError('Push-type machines create snapshots via the backup script on the server', 400)
+    }
+
     const result = resolveMachineWithSSH(machineId)
     if (isErrorResponse(result)) return result
 
-    const { machine, sshConfig } = result
+    const { sshConfig } = result
 
     let body: unknown = {}
     try {
@@ -81,8 +105,8 @@ export async function POST(
       return jsonError(parsed.error.issues[0]?.message ?? 'Invalid input', 400)
     }
 
-    const snapshotName = parsed.data.name ?? generateSnapshotName(machine.name)
     const snapshotType = parsed.data.type
+    const snapshotName = parsed.data.name ?? generateSnapshotName(machine.name, snapshotType)
 
     const command = getExportCommand(
       machine.openclawPath,

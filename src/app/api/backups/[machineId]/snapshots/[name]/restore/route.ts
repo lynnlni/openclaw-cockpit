@@ -4,8 +4,9 @@ import { z } from 'zod'
 import { exec } from '@/lib/ssh/client'
 import { shellEscapePath } from '@/lib/ssh/shell-escape'
 import { getSnapshotDir } from '@/lib/backup/exporter'
+import { setPendingRestore } from '@/lib/backup/push-store'
 import { snapshotNameSchema } from '@/lib/validation/schemas'
-import { jsonSuccess, jsonError, resolveMachineWithSSH, isErrorResponse } from '../../../../../_helpers'
+import { jsonSuccess, jsonError, resolveMachine, resolveMachineWithSSH, isErrorResponse } from '../../../../../_helpers'
 
 const restoreBodySchema = z.object({
   type: z.enum(['full', 'workspace']).optional(),
@@ -27,10 +28,24 @@ export async function POST(
       return jsonError('Invalid snapshot name', 400)
     }
 
+    const machine = resolveMachine(machineId)
+    if (isErrorResponse(machine)) return machine
+
+    // Push machines: set pending restore flag; OpenClaw script will poll and apply it
+    if (machine.connectionType === 'push') {
+      setPendingRestore(machineId, nameResult.data)
+      return jsonSuccess({
+        pendingRestore: true,
+        name: nameResult.data,
+        message: '恢复指令已下发，等待 OpenClaw 下次运行脚本时执行',
+      })
+    }
+
+    // SSH machines: original behavior
     const result = resolveMachineWithSSH(machineId)
     if (isErrorResponse(result)) return result
 
-    const { machine, sshConfig } = result
+    const { sshConfig } = result
     const backupsDir = getSnapshotDir(machine.openclawPath)
     const snapshotPath = `${backupsDir}/${nameResult.data}.tar.gz`
 

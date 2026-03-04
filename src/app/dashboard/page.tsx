@@ -7,13 +7,15 @@ import { LoadingSpinner } from '@/components/shared/loading-spinner'
 import { LayoutDashboard } from 'lucide-react'
 
 function MachineCardWithStatus({ machine }: { machine: import('@/lib/machines/types').Machine }) {
-  const { data: status, isLoading } = useMachineStatus(machine.id)
+  const { data: status, isLoading, isValidating, mutate } = useMachineStatus(machine.id)
 
   return (
     <MachineCard
       machine={machine}
       status={status}
       statusLoading={isLoading}
+      statusRefreshing={isValidating}
+      onRefreshStatus={mutate}
     />
   )
 }

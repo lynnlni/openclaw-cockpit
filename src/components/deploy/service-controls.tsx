@@ -2,7 +2,11 @@
 
 import { useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { Play, Square, RotateCw, Loader2 } from 'lucide-react'
 
 interface ServiceControlsProps {
@@ -12,12 +16,6 @@ interface ServiceControlsProps {
 }
 
 type Action = 'start' | 'stop' | 'restart'
-
-const actionConfig: Record<Action, { label: string; icon: typeof Play; variant: 'default' | 'destructive' | 'outline' }> = {
-  start: { label: '启动', icon: Play, variant: 'default' },
-  stop: { label: '停止', icon: Square, variant: 'destructive' },
-  restart: { label: '重启', icon: RotateCw, variant: 'outline' },
-}
 
 export function ServiceControls({ machineId, running, onStatusChange }: ServiceControlsProps) {
   const [pending, setPending] = useState<Action | null>(null)
@@ -31,9 +29,7 @@ export function ServiceControls({ machineId, running, onStatusChange }: ServiceC
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action }),
         })
-        if (res.ok) {
-          onStatusChange()
-        }
+        if (res.ok) onStatusChange()
       } catch {
         // handled by caller
       } finally {
@@ -43,44 +39,55 @@ export function ServiceControls({ machineId, running, onStatusChange }: ServiceC
     [machineId, onStatusChange]
   )
 
-  const availableActions: Action[] = running
-    ? ['restart', 'stop']
-    : ['start']
+  const isLoading = (action: Action) =>
+    pending === action ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null
 
   return (
-    <div className="flex items-center gap-2">
-      <div
-        className={cn(
-          'h-2 w-2 rounded-full',
-          running ? 'bg-emerald-500' : 'bg-zinc-500',
-        )}
-      />
-      <span className="text-sm text-muted-foreground">
-        {running ? '运行中' : '已停止'}
-      </span>
-      <div className="ml-2 flex gap-1">
-        {availableActions.map((action) => {
-          const config = actionConfig[action]
-          const Icon = config.icon
-          const isLoading = pending === action
-          return (
+    <div className="flex items-center gap-0.5">
+      {running ? (
+        <>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                disabled={pending !== null}
+                onClick={() => executeAction('restart')}
+              >
+                {isLoading('restart') ?? <RotateCw className="h-3.5 w-3.5" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom"><p>重启</p></TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                disabled={pending !== null}
+                onClick={() => executeAction('stop')}
+              >
+                {isLoading('stop') ?? <Square className="h-3.5 w-3.5 text-destructive" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom"><p>停止</p></TooltipContent>
+          </Tooltip>
+        </>
+      ) : (
+        <Tooltip>
+          <TooltipTrigger asChild>
             <Button
-              key={action}
-              variant={config.variant}
-              size="sm"
+              variant="ghost"
+              size="icon-xs"
               disabled={pending !== null}
-              onClick={() => executeAction(action)}
+              onClick={() => executeAction('start')}
             >
-              {isLoading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Icon className="h-3.5 w-3.5" />
-              )}
-              {config.label}
+              {isLoading('start') ?? <Play className="h-3.5 w-3.5 text-emerald-400" />}
             </Button>
-          )
-        })}
-      </div>
+          </TooltipTrigger>
+          <TooltipContent side="bottom"><p>启动</p></TooltipContent>
+        </Tooltip>
+      )}
     </div>
   )
 }

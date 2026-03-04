@@ -10,6 +10,7 @@ import { useFileContent, useSaveFile } from '@/hooks/use-file-content'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
 import { Button } from '@/components/ui/button'
 import { Save, Undo2, Server, AlertCircle } from 'lucide-react'
+import { formatFileSize, formatModifiedAt } from '@/lib/utils'
 
 const extensions = [json()]
 
@@ -85,6 +86,13 @@ export default function ConfigPage() {
           <p className="text-sm text-muted-foreground">
             编辑 openclaw.json — OpenClaw 核心配置文件
           </p>
+          {(fileData?.size !== undefined || fileData?.modifiedAt) && (
+            <p className="mt-0.5 text-xs text-muted-foreground/60">
+              {fileData.size !== undefined && formatFileSize(fileData.size)}
+              {fileData.size !== undefined && fileData.modifiedAt && ' · '}
+              {fileData.modifiedAt && `修改于 ${formatModifiedAt(fileData.modifiedAt)}`}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {saveSuccess && (

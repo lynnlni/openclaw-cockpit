@@ -88,19 +88,33 @@ export function addMachine(data: CreateMachineInput): Machine {
   const machines = readConfig()
   const now = new Date().toISOString()
 
+  const isPush = data.connectionType === 'push'
+
   const machine: Machine = {
     id: crypto.randomUUID(),
     name: data.name,
-    host: data.host,
-    port: data.port ?? 22,
-    username: data.username,
-    authType: data.authType,
-    encryptedPassword: data.password && data.password.length > 0 ? encrypt(data.password) : undefined,
-    privateKeyPath: data.privateKeyPath,
-    passphrase: data.passphrase,
+    connectionType: data.connectionType ?? 'ssh',
     openclawPath: data.openclawPath ?? '~/.openclaw',
     createdAt: now,
     updatedAt: now,
+    ...(isPush
+      ? {
+          pushRetainDays: data.pushRetainDays ?? 7,
+          ...(data.dashboardUrl && { dashboardUrl: data.dashboardUrl }),
+          ...(data.pushCronSchedule && { pushCronSchedule: data.pushCronSchedule }),
+        }
+      : {
+          host: data.host!,
+          port: data.port ?? 22,
+          username: data.username!,
+          authType: data.authType!,
+          encryptedPassword:
+            data.password && data.password.length > 0
+              ? encrypt(data.password)
+              : undefined,
+          privateKeyPath: data.privateKeyPath,
+          passphrase: data.passphrase,
+        }),
   }
 
   writeConfig([...machines, machine])
@@ -119,13 +133,19 @@ export function updateMachine(id: string, data: UpdateMachineInput): Machine {
   const updated: Machine = {
     ...existing,
     ...(data.name !== undefined && { name: data.name }),
+    ...(data.connectionType !== undefined && { connectionType: data.connectionType }),
     ...(data.host !== undefined && { host: data.host }),
     ...(data.port !== undefined && { port: data.port }),
     ...(data.username !== undefined && { username: data.username }),
     ...(data.authType !== undefined && { authType: data.authType }),
-    ...(data.password !== undefined && data.password.length > 0 && { encryptedPassword: encrypt(data.password) }),
+    ...(data.password !== undefined && data.password.length > 0 && {
+      encryptedPassword: encrypt(data.password),
+    }),
     ...(data.privateKeyPath !== undefined && { privateKeyPath: data.privateKeyPath }),
     ...(data.passphrase !== undefined && { passphrase: data.passphrase }),
+    ...(data.pushRetainDays !== undefined && { pushRetainDays: data.pushRetainDays }),
+    ...(data.dashboardUrl !== undefined && { dashboardUrl: data.dashboardUrl }),
+    ...(data.pushCronSchedule !== undefined && { pushCronSchedule: data.pushCronSchedule }),
     ...(data.openclawPath !== undefined && { openclawPath: data.openclawPath }),
     updatedAt: new Date().toISOString(),
   }
@@ -148,10 +168,10 @@ export function deleteMachine(id: string): void {
 
 export function getDecryptedConfig(machine: Machine): SSHConnectionConfig {
   return {
-    host: machine.host,
-    port: machine.port,
-    username: machine.username,
-    authType: machine.authType,
+    host: machine.host!,
+    port: machine.port!,
+    username: machine.username!,
+    authType: machine.authType!,
     ...(machine.encryptedPassword && {
       password: decrypt(machine.encryptedPassword),
     }),
@@ -162,4 +182,83 @@ export function getDecryptedConfig(machine: Machine): SSHConnectionConfig {
       passphrase: machine.passphrase,
     }),
   }
+}
+
+export function generateMachinePushToken(id: string): string {
+  const machines = readConfig()
+  const index = machines.findIndex((m) => m.id === id)
+
+  if (index === -1) {
+    throw new Error(`Machine not found: ${id}`)
+  }
+
+  const rawToken = crypto.randomBytes(32).toString('hex')
+  const encryptedToken = encrypt(rawToken)
+
+  const updated: Machine = {
+    ...machines[index]!,
+    pushToken: encryptedToken,
+    updatedAt: new Date().toISOString(),
+  }
+
+  writeConfig(machines.map((m, i) => (i === index ? updated : m)))
+  return rawToken
+}
+
+export function revokeMachinePushToken(id: string): void {
+  const machines = readConfig()
+  const index = machines.findIndex((m) => m.id === id)
+
+  if (index === -1) {
+    throw new Error(`Machine not found: ${id}`)
+  }
+
+  const { pushToken: _removed, ...rest } = machines[index]!
+  const updated: Machine = {
+    ...rest,
+    updatedAt: new Date().toISOString(),
+  }
+
+  writeConfig(machines.map((m, i) => (i === index ? updated : m)))
+}
+
+export function validatePushToken(id: string, token: string): boolean {
+  const machine = getMachine(id)
+  if (!machine || !machine.pushToken) {
+    return false
+  }
+
+  try {
+    const storedRaw = decrypt(machine.pushToken)
+    const a = Buffer.from(storedRaw, 'utf8')
+    const b = Buffer.from(token, 'utf8')
+    if (a.length !== b.length) {
+      return false
+    }
+    return crypto.timingSafeEqual(a, b)
+  } catch {
+    return false
+  }
+}
+
+export function updatePushMetadata(
+  id: string,
+  version: string | undefined,
+  pushAt: string
+): void {
+  const machines = readConfig()
+  const index = machines.findIndex((m) => m.id === id)
+
+  if (index === -1) {
+    throw new Error(`Machine not found: ${id}`)
+  }
+
+  const updated: Machine = {
+    ...machines[index]!,
+    lastPushAt: pushAt,
+    ...(version && { lastPushVersion: version }),
+    updatedAt: new Date().toISOString(),
+  }
+
+  writeConfig(machines.map((m, i) => (i === index ? updated : m)))
 }

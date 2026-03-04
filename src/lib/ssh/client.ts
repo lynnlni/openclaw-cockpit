@@ -83,6 +83,28 @@ export async function writeFile(
   }
 }
 
+export async function readFileStat(
+  machineId: string,
+  config: SSHConnectionConfig,
+  remotePath: string,
+): Promise<{ size: number; modifiedAt: string }> {
+  validatePath(remotePath)
+  const expanded = expandHome(remotePath)
+  const result = await exec(
+    machineId,
+    config,
+    `stat -c '%s %Y' "${expanded}" 2>/dev/null`,
+  )
+  if (result.code !== 0 || !result.stdout.trim()) {
+    return { size: 0, modifiedAt: '' }
+  }
+  const parts = result.stdout.trim().split(' ')
+  const size = parseInt(parts[0] ?? '0', 10)
+  const epoch = parseInt(parts[1] ?? '0', 10)
+  const modifiedAt = epoch ? new Date(epoch * 1000).toISOString() : ''
+  return { size: isNaN(size) ? 0 : size, modifiedAt }
+}
+
 export async function fileExists(
   machineId: string,
   config: SSHConnectionConfig,

@@ -1,11 +1,12 @@
 import type { VersionInfo } from './types'
+import { nvmPreamble } from './scripts'
 
 export function getLocalVersionCommand(): string {
-  return 'openclaw --version 2>/dev/null || echo none'
+  return [...nvmPreamble(), 'openclaw --version 2>/dev/null || echo none'].join('\n')
 }
 
 export function getLatestVersionCommand(): string {
-  return 'npm view openclaw version'
+  return [...nvmPreamble(), 'npm view openclaw version'].join('\n')
 }
 
 export function parseVersions(localOutput: string, remoteOutput: string): VersionInfo {

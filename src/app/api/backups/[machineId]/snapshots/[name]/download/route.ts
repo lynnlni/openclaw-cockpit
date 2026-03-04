@@ -3,8 +3,9 @@ import { NextRequest } from 'next/server'
 import { exec } from '@/lib/ssh/client'
 import { shellEscapePath } from '@/lib/ssh/shell-escape'
 import { getSnapshotDir } from '@/lib/backup/exporter'
+import { readPushBackup } from '@/lib/backup/push-store'
 import { snapshotNameSchema } from '@/lib/validation/schemas'
-import { jsonError, resolveMachineWithSSH, isErrorResponse } from '../../../../../_helpers'
+import { jsonError, resolveMachine, resolveMachineWithSSH, isErrorResponse } from '../../../../../_helpers'
 
 const MAX_DOWNLOAD_SIZE = 500 * 1024 * 1024 // 500 MB
 
@@ -24,10 +25,42 @@ export async function GET(
       return jsonError('Invalid snapshot name', 400)
     }
 
+    const machine = resolveMachine(machineId)
+    if (isErrorResponse(machine)) return machine
+
+    const fileName = `${nameResult.data}.tar.gz`
+
+    // Push machines: read from local push-store
+    if (machine.connectionType === 'push') {
+      let buffer: Buffer
+      try {
+        buffer = readPushBackup(machineId, nameResult.data)
+      } catch {
+        return jsonError('Snapshot not found', 404)
+      }
+
+      if (buffer.length > MAX_DOWNLOAD_SIZE) {
+        return jsonError(
+          `Snapshot too large (${Math.round(buffer.length / 1024 / 1024)} MB). Maximum download size is 500 MB.`,
+          413
+        )
+      }
+
+      return new Response(new Uint8Array(buffer), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/gzip',
+          'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+          'Content-Length': String(buffer.length),
+        },
+      })
+    }
+
+    // SSH machines: original behavior
     const result = resolveMachineWithSSH(machineId)
     if (isErrorResponse(result)) return result
 
-    const { machine, sshConfig } = result
+    const { sshConfig } = result
     const backupsDir = getSnapshotDir(machine.openclawPath)
     const filePath = `${backupsDir}/${nameResult.data}.tar.gz`
 
@@ -62,7 +95,6 @@ export async function GET(
     }
 
     const binaryData = Buffer.from(base64Result.stdout.replace(/\s/g, ''), 'base64')
-    const fileName = `${nameResult.data}.tar.gz`
 
     return new Response(binaryData, {
       status: 200,

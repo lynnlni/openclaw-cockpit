@@ -6,7 +6,7 @@ import { jsonSuccess, jsonError } from '../_helpers'
 
 export async function GET(): Promise<Response> {
   try {
-    const machines = getMachines().map(({ encryptedPassword, ...rest }) => rest)
+    const machines = getMachines().map(({ encryptedPassword: _ep, pushToken: _pt, ...rest }) => rest)
     return jsonSuccess(machines)
   } catch (error) {
     return jsonError(
