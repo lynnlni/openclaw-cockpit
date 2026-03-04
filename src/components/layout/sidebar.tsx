@@ -138,11 +138,17 @@ function NavSection({
 }
 
 export function Sidebar() {
+  const pathname = usePathname()
   const { selectedMachineId } = useMachine()
   const { data: machines } = useMachines()
   const noMachine = selectedMachineId === null
   const selectedMachine = machines?.find((m) => m.id === selectedMachineId)
   const isPush = selectedMachine?.connectionType === 'push'
+
+  // Don't show sidebar on login/change-password pages
+  if (pathname === '/login' || pathname === '/change-password') {
+    return null
+  }
 
   return (
     <aside className="flex h-screen w-60 shrink-0 flex-col border-r border-border bg-card">
