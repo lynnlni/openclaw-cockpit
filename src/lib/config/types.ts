@@ -2,7 +2,17 @@ export interface OpenClawConfig {
   models?: ModelsConfig
   channels?: ChannelConfig[]
   mcpServers?: Record<string, MCPServerConfig>
+  logging?: LoggingConfig
+  diagnostics?: DiagnosticsConfig
   [key: string]: unknown
+}
+
+export interface LoggingConfig {
+  level?: 'debug' | 'info' | 'warn' | 'error'
+}
+
+export interface DiagnosticsConfig {
+  enabled?: boolean
 }
 
 export interface ModelsConfig {

@@ -6,6 +6,7 @@ import { useMachine } from '@/store/machine-context'
 import { useMachines } from '@/hooks/use-machines'
 import { MachineSwitcher } from '@/components/layout/machine-switcher'
 import { cn } from '@/lib/utils'
+import { SSH_REMOTE_ACCESS_ENABLED } from '@/lib/ssh/feature'
 import {
   Tooltip,
   TooltipContent,
@@ -22,15 +23,16 @@ import {
   Heart,
   Brain,
   Calendar,
-  Bot,
   Wrench,
   Play,
   Timer,
   Fingerprint,
   Power,
+  BarChart2,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { ThemeToggle } from '@/components/layout/theme-toggle'
+import { SubAgentsSection } from '@/components/layout/sub-agents-sidebar'
 
 interface NavItem {
   label: string
@@ -42,6 +44,7 @@ interface NavItem {
 
 const operationsItems: NavItem[] = [
   { label: '仪表盘', href: '/dashboard', icon: LayoutDashboard },
+  { label: '消息分析', href: '/analytics', icon: BarChart2, requiresMachine: true, sshOnly: true },
   { label: '设备管理', href: '/machines', icon: Server },
   { label: '部署管理', href: '/deploy', icon: Rocket, sshOnly: true },
 ]
@@ -53,7 +56,7 @@ const workspaceItems: NavItem[] = [
   { label: '记忆索引', href: '/workspace/memory-index', icon: Brain, requiresMachine: true, sshOnly: true },
   { label: '每日记忆', href: '/workspace/daily-memory', icon: Calendar, requiresMachine: true, sshOnly: true },
   { label: '用户档案', href: '/workspace/user', icon: UserCircle, requiresMachine: true, sshOnly: true },
-  { label: 'Agent 配置', href: '/workspace/agents', icon: Bot, requiresMachine: true, sshOnly: true },
+  { label: 'Jobs', href: '/workspace/jobs', icon: FileJson, requiresMachine: true, sshOnly: true },
   { label: '工具配置', href: '/workspace/tools', icon: Wrench, requiresMachine: true, sshOnly: true },
   { label: '网关启动', href: '/workspace/boot', icon: Power, requiresMachine: true, sshOnly: true },
   { label: '启动引导', href: '/workspace/bootstrap', icon: Play, requiresMachine: true, sshOnly: true },
@@ -116,7 +119,11 @@ function NavSection({
   noMachine: boolean
   isPush: boolean
 }) {
-  const visibleItems = items.filter((item) => !(item.sshOnly && isPush))
+  const visibleItems = items.filter((item) =>
+    SSH_REMOTE_ACCESS_ENABLED
+      ? !(item.sshOnly && isPush)
+      : !item.sshOnly,
+  )
   if (visibleItems.length === 0) return null
 
   return (
@@ -163,6 +170,12 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto px-2 py-2">
         <NavSection label="运维" items={operationsItems} noMachine={noMachine} isPush={isPush ?? false} />
         <NavSection label="工作区" items={workspaceItems} noMachine={noMachine} isPush={isPush ?? false} />
+        {SSH_REMOTE_ACCESS_ENABLED && !noMachine && !(isPush ?? false) && selectedMachineId && selectedMachine && (
+          <SubAgentsSection
+            machineId={selectedMachineId}
+            openclawPath={selectedMachine.openclawPath ?? ''}
+          />
+        )}
         <NavSection label="管理" items={manageItems} noMachine={noMachine} isPush={isPush ?? false} />
       </nav>
 

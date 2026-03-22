@@ -12,6 +12,11 @@ interface FileContentResponse {
 }
 
 function buildFileUrl(machineId: string, filePath: string): string {
+  // Absolute paths (from agentDir/workspace config fields) use __abs__ prefix
+  if (filePath.startsWith('/')) {
+    const segments = filePath.slice(1).split('/').filter(Boolean)
+    return `/api/instances/${machineId}/files/__abs__/${segments.map(encodeURIComponent).join('/')}`
+  }
   const segments = filePath.split('/').filter(Boolean)
   return `/api/instances/${machineId}/files/${segments.map(encodeURIComponent).join('/')}`
 }

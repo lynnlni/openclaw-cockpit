@@ -1,5 +1,6 @@
 import { NodeSSH } from 'node-ssh'
 
+import { SSH_REMOTE_ACCESS_ENABLED, SSH_REMOTE_ACCESS_MESSAGE } from './feature'
 import type { SSHConnectionConfig } from './types'
 
 const CONNECTION_TIMEOUT_MS = 15_000
@@ -14,6 +15,12 @@ interface PoolEntry {
 }
 
 const pool: Map<string, PoolEntry> = new Map()
+
+function assertSSHRemoteAccessEnabled(): void {
+  if (!SSH_REMOTE_ACCESS_ENABLED) {
+    throw new Error(SSH_REMOTE_ACCESS_MESSAGE)
+  }
+}
 
 function buildConnectOptions(config: SSHConnectionConfig) {
   return {
@@ -85,6 +92,7 @@ export async function getConnection(
   machineId: string,
   config: SSHConnectionConfig,
 ): Promise<NodeSSH> {
+  assertSSHRemoteAccessEnabled()
   return ensureConnection(machineId, config)
 }
 
@@ -98,6 +106,7 @@ export async function execWithRetry(
   config: SSHConnectionConfig,
   command: string,
 ): Promise<{ stdout: string; stderr: string; code: number }> {
+  assertSSHRemoteAccessEnabled()
   let lastError: Error | null = null
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {

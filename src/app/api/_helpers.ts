@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { getMachine, getDecryptedConfig, validatePushToken } from '@/lib/machines/config'
 import type { Machine } from '@/lib/machines/types'
 import type { SSHConnectionConfig } from '@/lib/ssh/types'
+import { SSH_REMOTE_ACCESS_ENABLED, SSH_REMOTE_ACCESS_MESSAGE } from '@/lib/ssh/feature'
 import { machineIdSchema } from '@/lib/validation/schemas'
 
 export interface MachineWithSSH {
@@ -38,6 +39,10 @@ export function resolveMachineWithSSH(
   const result = resolveMachine(machineId)
   if (result instanceof NextResponse) {
     return result
+  }
+
+  if (!SSH_REMOTE_ACCESS_ENABLED) {
+    return jsonError(SSH_REMOTE_ACCESS_MESSAGE, 503)
   }
 
   if (result.connectionType === 'push') {

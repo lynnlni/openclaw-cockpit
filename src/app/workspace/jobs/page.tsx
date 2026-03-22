@@ -1,26 +1,12 @@
 'use client'
 
-import { Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
 import { Server } from 'lucide-react'
 
 import { useMachine } from '@/store/machine-context'
 import { FileEditorPanel } from '@/components/shared/file-editor-panel'
-import { LoadingSpinner } from '@/components/shared/loading-spinner'
 import { SSH_REMOTE_ACCESS_ENABLED } from '@/lib/ssh/feature'
 
-function AgentsContent({ machineId }: { machineId: string }) {
-  const searchParams = useSearchParams()
-  const filePath = searchParams.get('file') ?? 'workspace/AGENTS.md'
-
-  return (
-    <div className="-m-6" style={{ height: 'calc(100% + 48px)' }}>
-      <FileEditorPanel key={filePath} machineId={machineId} filePath={filePath} />
-    </div>
-  )
-}
-
-export default function AgentsPage() {
+export default function JobsPage() {
   const { selectedMachineId } = useMachine()
 
   if (!SSH_REMOTE_ACCESS_ENABLED) {
@@ -42,12 +28,8 @@ export default function AgentsPage() {
   }
 
   return (
-    <Suspense fallback={
-      <div className="flex h-full items-center justify-center">
-        <LoadingSpinner text="加载中..." />
-      </div>
-    }>
-      <AgentsContent machineId={selectedMachineId} />
-    </Suspense>
+    <div className="-m-6" style={{ height: 'calc(100% + 48px)' }}>
+      <FileEditorPanel machineId={selectedMachineId} filePath="cron/jobs.json" />
+    </div>
   )
 }
