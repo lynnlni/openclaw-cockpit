@@ -9,9 +9,11 @@ import { FileEditorPanel } from '@/components/shared/file-editor-panel'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
 import { SSH_REMOTE_ACCESS_ENABLED } from '@/lib/ssh/feature'
 
+const MAIN_AGENT_FILE = 'workspace/AGENTS.md'
+
 function AgentsContent({ machineId }: { machineId: string }) {
   const searchParams = useSearchParams()
-  const filePath = searchParams.get('file') ?? 'workspace/AGENTS.md'
+  const filePath = searchParams.get('file') ?? MAIN_AGENT_FILE
 
   return (
     <div className="-m-6" style={{ height: 'calc(100% + 48px)' }}>

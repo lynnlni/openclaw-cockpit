@@ -26,7 +26,7 @@ const ROUTE_LABELS: Record<string, string> = {
   '/workspace/memory-index': '记忆索引',
   '/workspace/daily-memory': '每日记忆',
   '/workspace/user': '用户档案',
-  '/workspace/jobs': 'Jobs',
+  '/workspace/jobs': '定时任务',
   '/workspace/agents': '子Agents 管理',
   '/workspace/tools': '工具配置',
   '/workspace/bootstrap': '启动引导',

@@ -14,7 +14,7 @@ function shellQuoteLiteral(value: string): string {
   return "'" + value.replace(/'/g, "'\\''") + "'"
 }
 
-function shellPath(remotePath: string): string {
+export function shellPath(remotePath: string): string {
   if (remotePath === '~' || remotePath === '~/') {
     return '"$HOME"'
   }
@@ -22,6 +22,21 @@ function shellPath(remotePath: string): string {
     return `"$HOME"/${shellQuoteLiteral(remotePath.slice(2))}`
   }
   return shellQuoteLiteral(remotePath)
+}
+
+export async function resolveRemotePath(
+  machineId: string,
+  config: SSHConnectionConfig,
+  remotePath: string,
+): Promise<string> {
+  validatePath(remotePath)
+  const result = await exec(machineId, config, `realpath -m -- ${shellPath(remotePath)}`)
+
+  if (result.code !== 0 || !result.stdout.trim()) {
+    throw new Error(`Failed to resolve ${remotePath}: ${result.stderr}`)
+  }
+
+  return result.stdout.trim()
 }
 
 export async function exec(

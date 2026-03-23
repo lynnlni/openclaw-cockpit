@@ -1,15 +1,15 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { Suspense, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import {
-  ChevronRight,
+  Bot,
   ChevronDown,
+  ChevronRight,
   FileText,
   Folder,
   FolderOpen,
-  Bot,
 } from 'lucide-react'
 
 import { useConfig } from '@/hooks/use-config'
@@ -25,10 +25,48 @@ interface AgentEntry {
 }
 
 const WORKSPACE_EXCLUDE = ['skills', 'node_modules', 'agents']
+const MAIN_AGENT_FILE = 'workspace/AGENTS.md'
+const REGISTRY_PATH = 'workspace/agents/registry'
+const FILE_LABELS: Record<string, string> = {
+  'AGENTS.md': 'Agent 规则',
+  'IDENTITY.md': '身份信息',
+  'SOUL.md': '性格设定',
+  'MEMORY.md': '记忆索引',
+  'USER.md': '用户档案',
+  'TOOLS.md': '工具配置',
+  'BOOTSTRAP.md': '启动引导',
+  'HEARTBEAT.md': '心跳配置',
+  'jobs.json': '定时任务',
+  'registry.json': '注册表索引',
+}
 
-// ─── Single file/dir tree item ─────────────────────────────────────────────
+function toEditorFilePath(entryPath: string, openclawPath: string): string {
+  return entryPath.startsWith(openclawPath + '/')
+    ? entryPath.slice(openclawPath.length + 1)
+    : entryPath
+}
 
-function FileItem({
+function toWorkspaceQueryPath(pathValue: string, openclawPath: string): string {
+  return pathValue.startsWith(openclawPath + '/')
+    ? pathValue.slice(openclawPath.length + 1)
+    : pathValue
+}
+
+function getAgentTreeRoot(agent: AgentEntry): string | null {
+  if (agent.workspace?.trim()) return agent.workspace
+  if (agent.agentDir?.trim()) return agent.agentDir
+  return null
+}
+
+function buildFileHref(filePath: string): string {
+  return `/workspace/agents?file=${encodeURIComponent(filePath)}`
+}
+
+function getDisplayName(entry: FileEntry): string {
+  return FILE_LABELS[entry.name] ?? entry.name
+}
+
+function TreeItem({
   entry,
   depth,
   activeFile,
@@ -41,114 +79,105 @@ function FileItem({
 }) {
   const [expanded, setExpanded] = useState(true)
   const isDir = entry.type === 'directory'
+  const queryFilePath = toEditorFilePath(entry.path, openclawPath)
+  const isActive = queryFilePath === activeFile
+  const displayName = getDisplayName(entry)
 
-  // Absolute paths from SSH won't match openclawPath (tilde), so pass as-is
-  const filePath = entry.path.startsWith(openclawPath + '/')
-    ? entry.path.slice(openclawPath.length + 1)
-    : entry.path
-
-  const isActive = filePath === activeFile
+  if (isDir) {
+    return (
+      <div>
+        <button
+          type="button"
+          onClick={() => setExpanded(!expanded)}
+          className="group flex w-full items-center gap-1.5 rounded-md py-1 text-left text-[12px] font-medium text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
+          style={{ paddingLeft: `${16 + depth * 10}px`, paddingRight: '8px' }}
+        >
+          {expanded ? (
+            <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
+          ) : (
+            <ChevronRight className="h-3 w-3 shrink-0 opacity-60" />
+          )}
+          {expanded ? (
+            <FolderOpen className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+          ) : (
+            <Folder className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+          )}
+          <span className="truncate leading-5">{displayName}</span>
+        </button>
+        {expanded && (
+          <div className="ml-4 border-l border-border/45 pl-1.5">
+            {entry.children?.map((child) => (
+              <TreeItem
+                key={child.path}
+                entry={child}
+                depth={depth + 1}
+                activeFile={activeFile}
+                openclawPath={openclawPath}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
-    <div>
-      {isDir ? (
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="flex w-full items-center gap-1 rounded py-0.5 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors text-left"
-          style={{ paddingLeft: `${10 + depth * 10}px`, paddingRight: '6px' }}
-        >
-          {expanded
-            ? <ChevronDown className="h-2.5 w-2.5 shrink-0 opacity-60" />
-            : <ChevronRight className="h-2.5 w-2.5 shrink-0 opacity-60" />}
-          {expanded
-            ? <FolderOpen className="h-3 w-3 shrink-0 text-amber-400" />
-            : <Folder className="h-3 w-3 shrink-0 text-amber-400" />}
-          <span className="truncate">{entry.name}</span>
-        </button>
-      ) : (
-        <Link
-          href={`/workspace/agents?file=${encodeURIComponent(filePath)}`}
-          className={cn(
-            'flex w-full items-center gap-1 rounded py-0.5 text-xs transition-colors',
-            isActive
-              ? 'bg-primary/10 text-primary'
-              : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
-          )}
-          style={{ paddingLeft: `${10 + depth * 10}px`, paddingRight: '6px' }}
-        >
-          <span className="w-2.5 shrink-0" />
-          <FileText className="h-3 w-3 shrink-0 text-blue-400" />
-          <span className="truncate">{entry.name}</span>
-        </Link>
+    <Link
+      href={buildFileHref(queryFilePath)}
+      className={cn(
+        'flex w-full items-center gap-2 rounded-md py-1 text-[12px] transition-colors',
+        isActive
+          ? 'bg-primary/10 text-primary'
+          : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground',
       )}
-      {isDir && expanded && entry.children?.map((child) => (
-        <FileItem
-          key={child.path}
-          entry={child}
-          depth={depth + 1}
-          activeFile={activeFile}
-          openclawPath={openclawPath}
-        />
-      ))}
-    </div>
+      style={{ paddingLeft: `${26 + depth * 10}px`, paddingRight: '8px' }}
+    >
+      <FileText className="h-3.5 w-3.5 shrink-0 text-blue-400" />
+      <span className="truncate font-medium leading-5">{displayName}</span>
+    </Link>
   )
 }
 
-// ─── Registry expandable ───────────────────────────────────────────────────
-
 function RegistryExpandable({
   machineId,
-  registryPath,
   openclawPath,
   activeFile,
 }: {
   machineId: string
-  registryPath: string | null
   openclawPath: string
   activeFile: string | null
 }) {
   const [expanded, setExpanded] = useState(false)
-
-  const { data: absFiles, isLoading: absLoading } = useWorkspaceFiles(
-    expanded && registryPath ? machineId : undefined,
-    registryPath ?? undefined,
-    true,
-  )
-  const { data: relFiles, isLoading: relLoading } = useWorkspaceFiles(
+  const { data: files, isLoading } = useWorkspaceFiles(
     expanded ? machineId : undefined,
-    'workspace/agents/registry',
+    REGISTRY_PATH,
     true,
   )
-
-  const isLoading = absLoading || relLoading
-  const seen = new Set<string>()
-  const files = [...(absFiles ?? []), ...(relFiles ?? [])].filter((f) => {
-    if (seen.has(f.path)) return false
-    seen.add(f.path)
-    return true
-  })
 
   return (
     <div>
       <button
+        type="button"
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors text-muted-foreground hover:bg-secondary hover:text-foreground text-left"
+        className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-[12px] font-semibold text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
       >
-        {expanded
-          ? <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
-          : <ChevronRight className="h-3 w-3 shrink-0 opacity-60" />}
+        {expanded ? (
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" />
+        ) : (
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-60" />
+        )}
         <Folder className="h-3.5 w-3.5 shrink-0 text-amber-400" />
-        <span className="truncate text-sm">Registry</span>
+        <span className="truncate">注册表</span>
       </button>
-      {expanded && (
-        <div className="max-h-48 overflow-y-auto">
+      {expanded ? (
+        <div className="ml-4 border-l border-border/45 pl-1.5">
           {isLoading ? (
-            <p className="px-6 py-1 text-xs text-muted-foreground/50">加载中…</p>
-          ) : !files.length ? (
-            <p className="px-6 py-1 text-xs text-muted-foreground/40">空</p>
+            <p className="px-5 py-1 text-[11px] text-muted-foreground/50">加载中…</p>
+          ) : !files?.length ? (
+            <p className="px-5 py-1 text-[11px] text-muted-foreground/40">空</p>
           ) : (
             files.map((entry) => (
-              <FileItem
+              <TreeItem
                 key={entry.path}
                 entry={entry}
                 depth={0}
@@ -158,12 +187,10 @@ function RegistryExpandable({
             ))
           )}
         </div>
-      )}
+      ) : null}
     </div>
   )
 }
-
-// ─── Per-agent expandable ──────────────────────────────────────────────────
 
 function AgentExpandable({
   agent,
@@ -177,14 +204,12 @@ function AgentExpandable({
   activeFile: string | null
 }) {
   const [expanded, setExpanded] = useState(false)
-
-  const relPath = agent.workspace?.startsWith(openclawPath + '/')
-    ? agent.workspace.slice(openclawPath.length + 1)
-    : agent.workspace
+  const rootPath = getAgentTreeRoot(agent)
+  const queryPath = rootPath ? toWorkspaceQueryPath(rootPath, openclawPath) : undefined
 
   const { data: files, isLoading } = useWorkspaceFiles(
-    expanded && relPath ? machineId : undefined,
-    relPath,
+    expanded && queryPath ? machineId : undefined,
+    queryPath,
     true,
     WORKSPACE_EXCLUDE,
   )
@@ -192,26 +217,31 @@ function AgentExpandable({
   return (
     <div>
       <button
+        type="button"
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors text-muted-foreground hover:bg-secondary hover:text-foreground text-left"
+        className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left transition-colors hover:bg-secondary/60"
       >
-        {expanded
-          ? <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
-          : <ChevronRight className="h-3 w-3 shrink-0 opacity-60" />}
+        {expanded ? (
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
+        ) : (
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
+        )}
         <Bot className="h-3.5 w-3.5 shrink-0 text-blue-400" />
-        <span className="truncate text-sm">{agent.name}</span>
+        <span className="truncate text-[13px] font-semibold leading-5 text-foreground">
+          {agent.name}
+        </span>
       </button>
-      {expanded && (
-        <div className="max-h-48 overflow-y-auto">
-          {!relPath ? (
-            <p className="px-6 py-1 text-xs text-muted-foreground/40">未配置 workspace</p>
+      {expanded ? (
+        <div className="ml-4 border-l border-border/45 pl-1.5">
+          {!rootPath ? (
+            <p className="px-5 py-1 text-[11px] text-muted-foreground/40">未配置 workspace</p>
           ) : isLoading ? (
-            <p className="px-6 py-1 text-xs text-muted-foreground/50">加载中…</p>
+            <p className="px-5 py-1 text-[11px] text-muted-foreground/50">加载中…</p>
           ) : !files?.length ? (
-            <p className="px-6 py-1 text-xs text-muted-foreground/40">空</p>
+            <p className="px-5 py-1 text-[11px] text-muted-foreground/40">空</p>
           ) : (
             files.map((entry) => (
-              <FileItem
+              <TreeItem
                 key={entry.path}
                 entry={entry}
                 depth={0}
@@ -221,12 +251,10 @@ function AgentExpandable({
             ))
           )}
         </div>
-      )}
+      ) : null}
     </div>
   )
 }
-
-// ─── Inner section (needs useSearchParams → wrapped in Suspense) ───────────
 
 function SubAgentsSectionInner({
   machineId,
@@ -241,44 +269,37 @@ function SubAgentsSectionInner({
   const { data: config } = useConfig(machineId)
   const agents: AgentEntry[] =
     ((config as Record<string, unknown>)?.agents as { list?: AgentEntry[] })?.list ?? []
-  const subAgents = agents.filter((a) => a.id !== 'main')
-
-  const firstAgentDir = agents.find((a) => a.agentDir)?.agentDir
-  const registryPath = firstAgentDir
-    ? firstAgentDir.split('/').slice(0, -2).join('/') + '/registry'
-    : null
-
-  const mainActive = activeFile === 'workspace/AGENTS.md'
+  const subAgents = agents.filter((agent) => agent.id !== 'main')
+  const mainActive = activeFile === MAIN_AGENT_FILE
 
   return (
     <div className="mb-3">
-      <span className="px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        子Agents
-      </span>
-      <div className="mt-1 space-y-0.5">
-        {/* 主配置 */}
+      <div className="px-3 pb-1">
+        <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground/70">
+          子代理配置
+        </span>
+      </div>
+
+      <div className="space-y-1">
         <Link
-          href="/workspace/agents?file=workspace%2FAGENTS.md"
+          href={buildFileHref(MAIN_AGENT_FILE)}
           className={cn(
-            'flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+            'flex items-center gap-2 rounded-md px-3 py-1.5 text-[12px] font-semibold transition-colors',
             mainActive
               ? 'bg-primary/10 text-primary'
-              : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+              : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground',
           )}
         >
-          <FileText className="h-4 w-4 shrink-0" />
-          <span>主配置</span>
+          <FileText className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate leading-5">主配置</span>
         </Link>
 
-        {/* Registry */}
         <RegistryExpandable
           machineId={machineId}
-          registryPath={registryPath}
           openclawPath={openclawPath}
           activeFile={activeFile}
         />
 
-        {/* Per sub-agent */}
         {subAgents.map((agent) => (
           <AgentExpandable
             key={agent.id}
@@ -292,8 +313,6 @@ function SubAgentsSectionInner({
     </div>
   )
 }
-
-// ─── Public export ─────────────────────────────────────────────────────────
 
 export function SubAgentsSection({
   machineId,

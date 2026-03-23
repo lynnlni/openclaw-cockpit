@@ -4,6 +4,7 @@ export interface OpenClawConfig {
   mcpServers?: Record<string, MCPServerConfig>
   logging?: LoggingConfig
   diagnostics?: DiagnosticsConfig
+  agents?: AgentsConfig
   [key: string]: unknown
 }
 
@@ -13,6 +14,19 @@ export interface LoggingConfig {
 
 export interface DiagnosticsConfig {
   enabled?: boolean
+}
+
+export interface AgentsConfig {
+  list?: AgentConfig[]
+  [key: string]: unknown
+}
+
+export interface AgentConfig {
+  id?: string
+  name?: string
+  workspace?: string
+  agentDir?: string
+  [key: string]: unknown
 }
 
 export interface ModelsConfig {

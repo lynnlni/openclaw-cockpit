@@ -14,11 +14,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { RefreshCw, Pencil, Terminal } from 'lucide-react'
+import { RefreshCw, Pencil } from 'lucide-react'
 import type { Machine } from '@/lib/machines/types'
 import { useMachines } from '@/hooks/use-machines'
 import { MachineForm, type MachineFormData } from '@/components/machines/machine-form'
-import { SshConsoleDialog } from '@/components/dashboard/ssh-console-dialog'
 
 interface QuickActionsProps {
   machine: Machine
@@ -30,7 +29,6 @@ export function QuickActions({ machine, onRefreshStatus, statusRefreshing }: Qui
   const { mutate: mutateMachines } = useMachines()
   const [editOpen, setEditOpen] = useState(false)
   const [updating, setUpdating] = useState(false)
-  const [consoleOpen, setConsoleOpen] = useState(false)
 
   const handleRefresh = useCallback(async () => {
     if (onRefreshStatus) await onRefreshStatus()
@@ -120,16 +118,6 @@ export function QuickActions({ machine, onRefreshStatus, statusRefreshing }: Qui
           </TooltipTrigger>
           <TooltipContent side="bottom"><p>编辑设备</p></TooltipContent>
         </Tooltip>
-
-        {/* Button 3: SSH Terminal */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon-xs" onClick={() => setConsoleOpen(true)}>
-              <Terminal className="h-3.5 w-3.5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom"><p>SSH 终端</p></TooltipContent>
-        </Tooltip>
       </div>
 
       <AlertDialog open={editOpen} onOpenChange={setEditOpen}>
@@ -145,12 +133,6 @@ export function QuickActions({ machine, onRefreshStatus, statusRefreshing }: Qui
           />
         </AlertDialogContent>
       </AlertDialog>
-
-      <SshConsoleDialog
-        open={consoleOpen}
-        machine={machine}
-        onClose={() => setConsoleOpen(false)}
-      />
     </>
   )
 }

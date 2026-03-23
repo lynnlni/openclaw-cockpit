@@ -15,7 +15,6 @@ import {
 import {
   LayoutDashboard,
   Server,
-  Rocket,
   FileJson,
   Sparkles,
   Archive,
@@ -46,7 +45,6 @@ const operationsItems: NavItem[] = [
   { label: '仪表盘', href: '/dashboard', icon: LayoutDashboard },
   { label: '消息分析', href: '/analytics', icon: BarChart2, requiresMachine: true, sshOnly: true },
   { label: '设备管理', href: '/machines', icon: Server },
-  { label: '部署管理', href: '/deploy', icon: Rocket, sshOnly: true },
 ]
 
 const workspaceItems: NavItem[] = [
@@ -56,7 +54,7 @@ const workspaceItems: NavItem[] = [
   { label: '记忆索引', href: '/workspace/memory-index', icon: Brain, requiresMachine: true, sshOnly: true },
   { label: '每日记忆', href: '/workspace/daily-memory', icon: Calendar, requiresMachine: true, sshOnly: true },
   { label: '用户档案', href: '/workspace/user', icon: UserCircle, requiresMachine: true, sshOnly: true },
-  { label: 'Jobs', href: '/workspace/jobs', icon: FileJson, requiresMachine: true, sshOnly: true },
+  { label: '定时任务', href: '/workspace/jobs', icon: FileJson, requiresMachine: true, sshOnly: true },
   { label: '工具配置', href: '/workspace/tools', icon: Wrench, requiresMachine: true, sshOnly: true },
   { label: '网关启动', href: '/workspace/boot', icon: Power, requiresMachine: true, sshOnly: true },
   { label: '启动引导', href: '/workspace/bootstrap', icon: Play, requiresMachine: true, sshOnly: true },
