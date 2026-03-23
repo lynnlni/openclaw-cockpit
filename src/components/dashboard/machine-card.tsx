@@ -177,15 +177,15 @@ export function MachineCard({ machine, status, statusLoading, statusRefreshing, 
           <div
             className={cn(
               'flex h-9 w-9 items-center justify-center rounded-md',
-              statusType === 'online' ? 'bg-emerald-500/10' : 'bg-muted'
+              statusType === 'online' ? 'bg-primary/10' : 'bg-muted'
             )}
           >
-            <Server className="h-4 w-4 text-muted-foreground" />
+            <Server className={cn('h-4 w-4', statusType === 'online' ? 'text-primary' : 'text-muted-foreground')} />
           </div>
           <div>
             <h3 className="text-sm font-medium text-foreground">{machine.name}</h3>
             <p className="text-xs text-muted-foreground">
-              {formatMaskedHost(machine.host)}
+              {machine.host ? formatMaskedHost(machine.host) : '—'}
             </p>
           </div>
         </div>

@@ -74,9 +74,9 @@ function NavLink({ item, disabled }: { item: NavItem; disabled: boolean }) {
   const linkContent = (
     <div
       className={cn(
-        'flex items-center gap-3 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+        'flex items-center gap-3 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors',
         isActive
-          ? 'bg-primary/10 text-primary'
+          ? 'bg-accent text-accent-foreground'
           : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
         disabled && 'pointer-events-none opacity-40',
       )}
@@ -126,7 +126,7 @@ function NavSection({
 
   return (
     <div className="mb-3">
-      <span className="px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <span className="px-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60">
         {label}
       </span>
       <div className="mt-1 space-y-0.5">

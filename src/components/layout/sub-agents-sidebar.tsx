@@ -159,7 +159,7 @@ function RegistryExpandable({
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-[12px] font-semibold text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
+        className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-[12px] font-medium text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
       >
         {expanded ? (
           <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" />
@@ -227,7 +227,7 @@ function AgentExpandable({
           <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
         )}
         <Bot className="h-3.5 w-3.5 shrink-0 text-blue-400" />
-        <span className="truncate text-[13px] font-semibold leading-5 text-foreground">
+        <span className="truncate text-[12px] font-medium leading-5 text-foreground">
           {agent.name}
         </span>
       </button>
@@ -275,7 +275,7 @@ function SubAgentsSectionInner({
   return (
     <div className="mb-3">
       <div className="px-3 pb-1">
-        <span className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground/70">
+        <span className="text-[11px] font-medium tracking-[0.12em] text-muted-foreground/60">
           子代理配置
         </span>
       </div>
@@ -284,7 +284,7 @@ function SubAgentsSectionInner({
         <Link
           href={buildFileHref(MAIN_AGENT_FILE)}
           className={cn(
-            'flex items-center gap-2 rounded-md px-3 py-1.5 text-[12px] font-semibold transition-colors',
+            'flex items-center gap-2 rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors',
             mainActive
               ? 'bg-primary/10 text-primary'
               : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground',
