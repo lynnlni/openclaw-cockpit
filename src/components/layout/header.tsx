@@ -20,6 +20,7 @@ const ROUTE_LABELS: Record<string, string> = {
   '/dashboard': '仪表盘',
   '/machines': '机器管理',
   '/deploy': '部署管理',
+  '/agents': '代理列表',
   '/workspace/config': '核心配置',
   '/workspace/identity': '身份信息',
   '/workspace/soul': '性格设定',

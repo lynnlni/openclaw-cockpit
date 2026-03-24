@@ -28,6 +28,7 @@ import {
   Fingerprint,
   Power,
   BarChart2,
+  Bot,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { ThemeToggle } from '@/components/layout/theme-toggle'
@@ -62,6 +63,7 @@ const workspaceItems: NavItem[] = [
 ]
 
 const manageItems: NavItem[] = [
+  { label: '代理列表', href: '/agents', icon: Bot, requiresMachine: true, sshOnly: true },
   { label: '技能管理', href: '/skills', icon: Sparkles, requiresMachine: true, sshOnly: true },
   { label: '备份恢复', href: '/backups', icon: Archive, requiresMachine: true },
 ]
